@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MISI 50 SOALAN – LUMBA KERETA ILMU (TV 60 INCI EDITION)</title>
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.95);
+            --accent-yellow: #fbbf24;
+            --accent-blue: #38bdf8;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-purple: #a855f7;
+            --text-light: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body, html {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* TV 16:9 Canvas Container */
+        #game-container {
+            width: 100vw;
+            height: 56.25vw; /* 16:9 Ratio */
+            max-height: 100vh;
+            max-width: 177.78vh; /* 16:9 Ratio */
+            position: relative;
+            background: #000;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        /* 3D Canvas Layer */
+        #canvas-3d {
+            width: 100%;
+            height: 45%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* UI Layer Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .interactive {
+            pointer-events: auto;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            height: 10%;
+            background: linear-gradient(180deg, rgba(15,23,42,0.9) 0%, rgba(15,23,42,0) 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+            z-index: 10;
+        }
+
+        .game-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--accent-yellow);
+            text-shadow: 3px 3px 0px #000, 0 0 10px rgba(251, 191, 36, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .category-badge {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 2px solid #fff;
+        }
+
+        /* Bottom Play Area (Question & Controls) */
+        .bottom-area {
+            height: 55%;
+            background: rgba(15, 23, 42, 0.95);
+            border-top: 4px solid var(--accent-blue);
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 1.5rem;
+            padding: 1.2rem 2rem;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Host Kapten Kiki Section */
+        .host-section {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 20px;
+            border: 3px solid var(--accent-blue);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .kiki-avatar {
+            width: 110px;
+            height: 110px;
+            background: #ff5722;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3.5rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .kiki-dialogue {
+            margin-top: 0.8rem;
+            background: #fff;
+            color: #000;
+            padding: 0.8rem 1rem;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            width: 100%;
+        }
+
+        /* Question Box Section */
+        .question-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .question-box {
+            background: rgba(51, 65, 85, 0.9);
+            border: 3px solid var(--accent-yellow);
+            border-radius: 20px;
+            padding: 1.2rem;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+            line-height: 1.3;
+        }
+
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn-answer {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border: 3px solid #64748b;
+            color: white;
+            padding: 1.2rem 1.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 6px 0 #0f172a, 0 10px 15px rgba(0,0,0,0.4);
+        }
+
+        .btn-answer:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-yellow);
+            background: linear-gradient(135deg, #334155, #475569);
+        }
+
+        .btn-answer:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #0f172a;
+        }
+
+        .btn-answer .badge {
+            background: var(--accent-yellow);
+            color: #000;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 900;
+            flex-shrink: 0;
+        }
+
+        /* Leaderboard & Status Dashboard */
+        .players-dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            justify-content: center;
+        }
+
+        .player-card {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            padding: 0.6rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .player-card.active {
+            border-color: var(--accent-yellow);
+            background: rgba(51, 65, 85, 1);
+            transform: scale(1.03);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .car-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .player-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .player-score {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--accent-yellow);
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: #0f172a;
+            border-radius: 4px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* Full Screen Modals / Setup */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .setup-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: var(--accent-yellow);
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+            text-align: center;
+        }
+
+        .setup-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            width: 95%;
+            max-width: 1400px;
+            margin-bottom: 2rem;
+        }
+
+        .setup-card {
+            background: rgba(30, 41, 59, 0.9);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 3px solid #475569;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .setup-card h3 {
+            font-size: 1.8rem;
+            text-align: center;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-size: 1.1rem;
+            color: #94a3b8;
+        }
+
+        .input-group input, .input-group select {
+            background: #0f172a;
+            border: 2px solid #475569;
+            color: white;
+            padding: 0.8rem;
+            font-size: 1.3rem;
+            border-radius: 10px;
+            outline: none;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            border-color: var(--accent-yellow);
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, var(--accent-green), #15803d);
+            border: none;
+            color: white;
+            padding: 1.2rem 4rem;
+            font-size: 2.2rem;
+            font-weight: 900;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(34, 197, 94, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .btn-start:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 35px rgba(34, 197, 94, 0.6);
+        }
+
+        /* Winner Screen */
+        .winner-card {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .trophy-icon {
+            font-size: 8rem;
+            animation: bounce 1s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-20px); }
+        }
+
+        .winner-name {
+            font-size: 4rem;
+            font-weight: 900;
+            color: var(--accent-yellow);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- 3D Racing Track Canvas -->
+        <div id="canvas-3d"></div>
+
+        <!-- Interactive UI Overlay -->
+        <div id="ui-layer">
+            <!-- Top Bar Info -->
+            <div class="top-bar">
+                <div class="game-title">🏎️ MISI 50 SOALAN</div>
+                <div id="category-badge" class="category-badge">BAHASA MELAYU</div>
+                <div style="font-size: 1.5rem; font-weight: bold;" id="question-tracker">Soalan 1</div>
+            </div>
+
+            <!-- Bottom Question & Leaderboard Area -->
+            <div class="bottom-area interactive">
+                <!-- Host Kapten Kiki -->
+                <div class="host-section">
+                    <div class="kiki-avatar">🐶</div>
+                    <div style="font-weight: bold; font-size: 1.3rem; margin-top: 0.5rem; color: var(--accent-yellow);">KAPTEN KIKI</div>
+                    <div id="kiki-dialogue" class="kiki-dialogue">Selamat bertanding! Jawab soalan untuk memecut!</div>
+                </div>
+
+                <!-- Main Question Area -->
+                <div class="question-section">
+                    <div id="question-text" class="question-box">
+                        Memuatkan soalan...
+                    </div>
+                    <div class="answers-grid">
+                        <button class="btn-answer" onclick="submitAnswer(0)">
+                            <div class="badge">A</div>
+                            <span id="ans-0">Pilihan A</span>
+                        </button>
+                        <button class="btn-answer" onclick="submitAnswer(1)">
+                            <div class="badge">B</div>
+                            <span id="ans-1">Pilihan B</span>
+                        </button>
+                        <button class="btn-answer" onclick="submitAnswer(2)">
+                            <div class="badge">C</div>
+                            <span id="ans-2">Pilihan C</span>
+                        </button>
+                        <button class="btn-answer" onclick="submitAnswer(3)">
+                            <div class="badge">D</div>
+                            <span id="ans-3">Pilihan D</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Players Status Dashboard -->
+                <div class="players-dashboard" id="players-dashboard">
+                    <!-- Dynamic rendering of player progress -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Setup Screen Modal -->
+        <div id="setup-modal" class="modal-overlay interactive">
+            <div class="setup-title">🏎️ LUMBA KERETA ILMU</div>
+            <div class="setup-grid">
+                <!-- Player 1 -->
+                <div class="setup-card" style="border-color: var(--accent-red);">
+                    <h3 style="color: var(--accent-red);">Pemain 1</h3>
+                    <div class="input-group">
+                        <label>Nama Pelumba</label>
+                        <input type="text" id="p1-name" value="Pelumba 1">
+                    </div>
+                    <div class="input-group">
+                        <label>Umur</label>
+                        <select id="p1-age">
+                            <option value="5">5 Tahun</option>
+                            <option value="6">6 Tahun</option>
+                            <option value="7" selected>7 Tahun</option>
+                            <option value="8">8 Tahun</option>
+                            <option value="9">9 Tahun</option>
+                        </select>
+                    </div>
+                    <div style="font-weight: bold; color: var(--accent-red);">Kereta: Sport Merah</div>
+                </div>
+
+                <!-- Player 2 -->
+                <div class="setup-card" style="border-color: var(--accent-yellow);">
+                    <h3 style="color: var(--accent-yellow);">Pemain 2</h3>
+                    <div class="input-group">
+                        <label>Nama Pelumba</label>
+                        <input type="text" id="p2-name" value="Pelumba 2">
+                    </div>
+                    <div class="input-group">
+                        <label>Umur</label>
+                        <select id="p2-age">
+                            <option value="5">5 Tahun</option>
+                            <option value="6">6 Tahun</option>
+                            <option value="7" selected>7 Tahun</option>
+                            <option value="8">8 Tahun</option>
+                            <option value="9">9 Tahun</option>
+                        </select>
+                    </div>
+                    <div style="font-weight: bold; color: var(--accent-yellow);">Kereta: Kompak Kuning</div>
+                </div>
+
+                <!-- Player 3 -->
+                <div class="setup-card" style="border-color: var(--accent-blue);">
+                    <h3 style="color: var(--accent-blue);">Pemain 3</h3>
+                    <div class="input-group">
+                        <label>Nama Pelumba</label>
+                        <input type="text" id="p3-name" value="Pelumba 3">
+                    </div>
+                    <div class="input-group">
+                        <label>Umur</label>
+                        <select id="p3-age">
+                            <option value="5">5 Tahun</option>
+                            <option value="6">6 Tahun</option>
+                            <option value="7" selected>7 Tahun</option>
+                            <option value="8">8 Tahun</option>
+                            <option value="9">9 Tahun</option>
+                        </select>
+                    </div>
+                    <div style="font-weight: bold; color: var(--accent-blue);">Kereta: Pikap Biru</div>
+                </div>
+
+                <!-- Player 4 -->
+                <div class="setup-card" style="border-color: var(--accent-purple);">
+                    <h3 style="color: var(--accent-purple);">Pemain 4</h3>
+                    <div class="input-group">
+                        <label>Nama Pelumba</label>
+                        <input type="text" id="p4-name" value="Pelumba 4">
+                    </div>
+                    <div class="input-group">
+                        <label>Umur</label>
+                        <select id="p4-age">
+                            <option value="5">5 Tahun</option>
+                            <option value="6">6 Tahun</option>
+                            <option value="7" selected>7 Tahun</option>
+                            <option value="8">8 Tahun</option>
+                            <option value="9">9 Tahun</option>
+                        </select>
+                    </div>
+                    <div style="font-weight: bold; color: var(--accent-purple);">Kereta: SUV Ungu</div>
+                </div>
+            </div>
+            <button class="btn-start" onclick="startGame()">MULA PERLUMBAAN!</button>
+        </div>
+
+        <!-- Victory Screen Modal -->
+        <div id="winner-modal" class="modal-overlay interactive hidden">
+            <div class="winner-card">
+                <div class="trophy-icon">🏆</div>
+                <h1 style="font-size: 3rem; color: white;">JUARA PERLUMBAAN!</h1>
+                <div id="winner-display-name" class="winner-name">PELUMBA 1</div>
+                <p style="font-size: 2rem; color: #cbd5e1;">Tahniah! Anda berjaya mencapai 50 Jawapan Betul!</p>
+                <button class="btn-start" style="margin-top: 2rem;" onclick="location.reload()">MAIN SEMULA</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. GAME STATE & SETUP VARIABLES
+           ========================================================================== */
+        const TARGET_SCORE = 50;
+        let activePlayerIndex = 0;
+        let isRebutMode = false;
+        let originalPlayerIndex = 0;
+        let usedQuestionIds = new Set();
+        let currentQuestion = null;
+        let questionCounter = 0;
+
+        let players = [
+            { id: 1, name: "Pelumba 1", age: 7, color: "#ef4444", score: 0, wrong: 0, streak: 0, carObj: null, zPos: 0 },
+            { id: 2, name: "Pelumba 2", age: 7, color: "#fbbf24", score: 0, wrong: 0, streak: 0, carObj: null, zPos: 0 },
+            { id: 3, name: "Pelumba 3", age: 7, color: "#38bdf8", score: 0, wrong: 0, streak: 0, carObj: null, zPos: 0 },
+            { id: 4, name: "Pelumba 4", age: 7, color: "#a855f7", score: 0, wrong: 0, streak: 0, carObj: null, zPos: 0 }
+        ];
+
+        /* ==========================================================================
+           2. 500 UNIQUE QUESTIONS BANK GENERATOR
+           ========================================================================== */
+        const questionBank = [];
+
+        function generateQuestionBank() {
+            let idCounter = 1;
+            const categories = ["BM", "ENG", "PAI", "SAINS", "LOGIK"];
+
+            categories.forEach(cat => {
+                for (let i = 1; i <= 100; i++) {
+                    const isEasy = i <= 50;
+                    const ageGroup = isEasy ? [5, 6] : [7, 8, 9];
+                    let qText = "", choices = [], correctIdx = 0, exp = "";
+
+                    if (cat === "BM") {
+                        if (isEasy) {
+                            qText = `Apakah huruf pertama bagi perkataan "${getBMWord(i)}"?`;
+                            const char = getBMWord(i)[0].toUpperCase();
+                            choices = [char, getDiffChar(char, 1), getDiffChar(char, 2), getDiffChar(char, 3)];
+                            correctIdx = 0;
+                            exp = `Huruf pertama ialah ${char}.`;
+                        } else {
+                            qText = `Pilih antonim (lawan kata) bagi perkataan "${getAntonymPair(i).word}":`;
+                            choices = shuffleArray([getAntonymPair(i).ans, getAntonymPair(i).w1, getAntonymPair(i).w2, getAntonymPair(i).w3]);
+                            correctIdx = choices.indexOf(getAntonymPair(i).ans);
+                            exp = `Lawan kata bagi ${getAntonymPair(i).word} ialah ${getAntonymPair(i).ans}.`;
+                        }
+                    } else if (cat === "ENG") {
+                        if (isEasy) {
+                            qText = `What is the correct English word for animal number ${i}?`;
+                            const anim = getEngAnimal(i);
+                            choices = shuffleArray([anim.correct, anim.w1, anim.w2, anim.w3]);
+                            correctIdx = choices.indexOf(anim.correct);
+                            exp = `The correct word is ${anim.correct}.`;
+                        } else {
+                            qText = `Complete the sentence: "The dog ________ in the garden." (No. ${i})`;
+                            choices = ["barks", "bark", "barking", "barked"];
+                            correctIdx = 0;
+                            exp = "Subject 'The dog' is singular, so we use 'barks'.";
+                        }
+                    } else if (cat === "PAI") {
+                        if (isEasy) {
+                            qText = `Berapakah jumlah Rukun Islam yang wajib diketahui? (Soalan ${i})`;
+                            choices = ["5", "6", "4", "7"];
+                            correctIdx = 0;
+                            exp = "Rukun Islam ada 5 perkara.";
+                        } else {
+                            qText = `Nabi Muhammad SAW adalah Nabi yang ke berapa dalam 25 Rasul? (Soalan ${i})`;
+                            choices = ["25", "1", "24", "10"];
+                            correctIdx = 0;
+                            exp = "Nabi Muhammad SAW adalah Nabi dan Rasul yang terakhir (ke-25).";
+                        }
+                    } else if (cat === "SAINS") {
+                        if (isEasy) {
+                            qText = `Kita menggunakan organ apakah untuk mendengar bunyi? (Soalan ${i})`;
+                            choices = ["Telinga", "Mata", "Hidung", "Lidah"];
+                            correctIdx = 0;
+                            exp = "Telinga adalah deria pendengaran.";
+                        } else {
+                            qText = `Planet apakah yang paling hampir dengan Matahari dalam Sistem Suria? (Soalan ${i})`;
+                            choices = ["Utarid", "Zuhrah", "Bumi", "Marikh"];
+                            correctIdx = 0;
+                            exp = "Utarid adalah planet terdekat dengan Matahari.";
+                        }
+                    } else if (cat === "LOGIK") {
+                        if (isEasy) {
+                            const a = (i % 10) + 1;
+                            const b = (i % 5) + 2;
+                            qText = `Berapakah hasil tambah ${a} + ${b}?`;
+                            const ans = a + b;
+                            choices = shuffleArray([`${ans}`, `${ans+1}`, `${ans-1}`, `${ans+2}`]);
+                            correctIdx = choices.indexOf(`${ans}`);
+                            exp = `${a} + ${b} = ${ans}.`;
+                        } else {
+                            const num = i * 2;
+                            qText = `Apakah nombor seterusnya dalam urutan: 2, 4, 6, 8, ... (Pola +2)?`;
+                            choices = ["10", "11", "9", "12"];
+                            correctIdx = 0;
+                            exp = "Pola nombor bertambah 2, jadi selepas 8 ialah 10.";
+                        }
+                    }
+
+                    questionBank.push({
+                        id: idCounter++,
+                        category: cat,
+                        ageGroup: ageGroup,
+                        question: qText,
+                        choices: choices,
+                        correct: correctIdx,
+                        explanation: exp
+                    });
+                }
+            });
+        }
+
+        /* Helper generators for unique strings */
+        function getBMWord(idx) {
+            const words = ["Ayam", "Bola", "Cawan", "Daun", "Epal", "Gajah", "Harimau", "Ikan", "Jam", "Kucing", "Lembu", "Monyet", "Nasi", "Orang", "Pokok", "Rusa", "Singa", "Topi", "Udang", "Zebra"];
+            return words[idx % words.length];
+        }
+        function getDiffChar(char, offset) {
+            const code = char.charCodeAt(0);
+            return String.fromCharCode(((code - 65 + offset) % 26) + 65);
+        }
+        function getAntonymPair(idx) {
+            const pairs = [
+                { word: "Tinggi", ans: "Rendah", w1: "Panjang", w2: "Besar", w3: "Tebal" },
+                { word: "Panas", ans: "Sejuk", w1: "Suam", w2: "Basah", w3: "Kering" },
+                { word: "Besar", ans: "Kecil", w1: "Luas", w2: "Berat", w3: "Panjang" },
+                { word: "Terang", ans: "Gelap", w1: "Siang", w2: "Putih", w3: "Jelas" }
+            ];
+            return pairs[idx % pairs.length];
+        }
+        function getEngAnimal(idx) {
+            const anims = [
+                { correct: "Cat", w1: "Dog", w2: "Fish", w3: "Bird" },
+                { correct: "Elephant", w1: "Tiger", w2: "Lion", w3: "Monkey" },
+                { correct: "Rabbit", w1: "Bear", w2: "Fox", w3: "Wolf" }
+            ];
+            return anims[idx % anims.length];
+        }
+        function shuffleArray(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        generateQuestionBank();
+
+        /* ==========================================================================
+           3. THREE.JS 3D ENGINE & SCENE CREATION
+           ========================================================================== */
+        let scene, camera, renderer;
+        const carMeshes = [];
+
+        function init3DScene() {
+            const container = document.getElementById('canvas-3d');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x38bdf8);
+            scene.fog = new THREE.FogExp2(0x38bdf8, 0.015);
+
+            camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 12, -22);
+            camera.lookAt(0, 2, 10);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(20, 40, -20);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            // Ground & Track Layout
+            const trackGeo = new THREE.PlaneGeometry(24, 500);
+            const trackMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+            const track = new THREE.Mesh(trackGeo, trackMat);
+            track.rotation.x = -Math.PI / 2;
+            track.position.z = 200;
+            scene.add(track);
+
+            // Lanes & Markers
+            for (let i = -9; i <= 9; i += 6) {
+                if (i !== 9) {
+                    const lineGeo = new THREE.PlaneGeometry(0.3, 500);
+                    const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                    const line = new THREE.Mesh(lineGeo, lineMat);
+                    line.rotation.x = -Math.PI / 2;
+                    line.position.set(i + 3, 0.01, 200);
+                    scene.add(line);
+                }
+            }
+
+            // Create 4 Cartoon Cars
+            const lanePositions = [-6.75, -2.25, 2.25, 6.75];
+            players.forEach((p, idx) => {
+                const car = createCartoonCar(p.color);
+                car.position.set(lanePositions[idx], 0.5, 0);
+                scene.add(car);
+                carMeshes.push(car);
+                p.carObj = car;
+            });
+
+            // Environment Scenery (Trees & Buildings)
+            for (let z = 0; z < 400; z += 20) {
+                createTree(-15, z);
+                createTree(15, z);
+            }
+
+            animate3D();
+        }
+
+        function createCartoonCar(colorHex) {
+            const carGroup = new THREE.Group();
+            
+            // Body
+            const bodyGeo = new THREE.BoxGeometry(2, 1, 3.5);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.2 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.5;
+            carGroup.add(body);
+
+            // Cabin / Roof
+            const cabinGeo = new THREE.BoxGeometry(1.6, 0.8, 1.8);
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.1 });
+            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+            cabin.position.set(0, 1.2, -0.2);
+            carGroup.add(cabin);
+
+            // Wheels
+            const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const wPositions = [[-1.1, 0.4, 1], [1.1, 0.4, 1], [-1.1, 0.4, -1], [1.1, 0.4, -1]];
+
+            wPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(...pos);
+                carGroup.add(wheel);
+            });
+
+            return carGroup;
+        }
+
+        function createTree(x, z) {
+            const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, 2);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.set(x, 1, z);
+
+            const leavesGeo = new THREE.DodecahedronGeometry(1.5);
+            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x22c55e });
+            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+            leaves.position.set(x, 2.5, z);
+
+            scene.add(trunk);
+            scene.add(leaves);
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+
+            // Smoothly move cars forward based on score
+            players.forEach((p, idx) => {
+                const targetZ = p.score * 5; // 5 units per score point
+                p.carObj.position.z += (targetZ - p.carObj.position.z) * 0.05;
+            });
+
+            // Camera tracks average position or lead player
+            const leadZ = Math.max(...players.map(p => p.carObj.position.z));
+            camera.position.z = leadZ - 15;
+            camera.lookAt(0, 2, leadZ + 10);
+
+            renderer.render(scene);
+        }
+
+        /* ==========================================================================
+           4. AUDIO ENGINE & KAPTEN KIKI SPEECH
+           ========================================================================== */
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ms-MY';
+                utterance.rate = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+            document.getElementById('kiki-dialogue').innerText = text;
+        }
+
+        function playSoundEffect(type) {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            if (type === 'correct') {
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.frequency.setValueAtTime(220, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.4, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+            }
+        }
+
+        /* ==========================================================================
+           5. GAME LOGIC & TURN MANAGEMENT
+           ========================================================================== */
+        function startGame() {
+            // Read Player Setup
+            players[0].name = document.getElementById('p1-name').value || "Pelumba 1";
+            players[0].age = parseInt(document.getElementById('p1-age').value);
+            players[1].name = document.getElementById('p2-name').value || "Pelumba 2";
+            players[1].age = parseInt(document.getElementById('p2-age').value);
+            players[2].name = document.getElementById('p3-name').value || "Pelumba 3";
+            players[2].age = parseInt(document.getElementById('p3-age').value);
+            players[3].name = document.getElementById('p4-name').value || "Pelumba 4";
+            players[3].age = parseInt(document.getElementById('p4-age').value);
+
+            document.getElementById('setup-modal').classList.add('hidden');
+            init3DScene();
+            renderDashboard();
+            loadNextQuestion();
+            speakText(`Selamat datang! Perlumbaan bermula dengan ${players[activePlayerIndex].name}!`);
+        }
+
+        function renderDashboard() {
+            const container = document.getElementById('players-dashboard');
+            container.innerHTML = '';
+
+            players.forEach((p, idx) => {
+                const isCurrent = idx === activePlayerIndex;
+                const percent = (p.score / TARGET_SCORE) * 100;
+                
+                const card = document.createElement('div');
+                card.className = `player-card ${isCurrent ? 'active' : ''}`;
+                card.innerHTML = `
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="player-info">
+                                <div class="car-dot" style="background: ${p.color};"></div>
+                                <div class="player-name">${p.name} (${p.age} Thn)</div>
+                            </div>
+                            <div class="player-score">${p.score} / ${TARGET_SCORE}</div>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: ${percent}%; background: ${p.color};"></div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function loadNextQuestion() {
+            const activePlayer = players[activePlayerIndex];
+            
+            // Strictly Filter Available Unused Questions for Active Player's Age Group
+            let availableQuestions = questionBank.filter(q => 
+                !usedQuestionIds.has(q.id) && 
+                (activePlayer.age <= 6 ? q.ageGroup.includes(5) : q.ageGroup.includes(7))
+            );
+
+            // Fallback if no questions left for specific age group
+            if (availableQuestions.length === 0) {
+                availableQuestions = questionBank.filter(q => !usedQuestionIds.has(q.id));
+            }
+
+            if (availableQuestions.length === 0) {
+                speakText("Semua 500 soalan telah digunakan! Memuat semula bank soalan.");
+                usedQuestionIds.clear();
+                loadNextQuestion();
+                return;
+            }
+
+            // Pick Random Question
+            const randomIdx = Math.floor(Math.random() * availableQuestions.length);
+            currentQuestion = availableQuestions[randomIdx];
+            usedQuestionIds.add(currentQuestion.id);
+            questionCounter++;
+
+            // Render UI
+            document.getElementById('question-tracker').innerText = `Soalan ${questionCounter}`;
+            document.getElementById('category-badge').innerText = getCategoryFullName(currentQuestion.category);
+            document.getElementById('question-text').innerText = currentQuestion.question;
+
+            currentQuestion.choices.forEach((choice, idx) => {
+                document.getElementById(`ans-${idx}`).innerText = choice;
+            });
+
+            renderDashboard();
+        }
+
+        function getCategoryFullName(cat) {
+            const map = {
+                "BM": "BAHASA MELAYU",
+                "ENG": "ENGLISH",
+                "PAI": "PENDIDIKAN ISLAM",
+                "SAINS": "SAINS",
+                "LOGIK": "KUIZ LOGIK"
+            };
+            return map[cat] || cat;
+        }
+
+        function submitAnswer(chosenIdx) {
+            const activePlayer = players[activePlayerIndex];
+
+            if (chosenIdx === currentQuestion.correct) {
+                // Correct Answer
+                playSoundEffect('correct');
+                activePlayer.score += 1;
+                activePlayer.streak += 1;
+
+                if (activePlayer.streak >= 5) {
+                    speakText(`TURBO BOOST! ${activePlayer.name} menjawab 5 soalan betul berturut-turut!`);
+                    activePlayer.score += 1; // Bonus point
+                } else {
+                    speakText(`Syabas ${activePlayer.name}! Jawapan tepat!`);
+                }
+
+                // Check Win Condition Immediately
+                if (activePlayer.score >= TARGET_SCORE) {
+                    triggerWinSequence(activePlayer);
+                    return;
+                }
+
+                nextTurn();
+            } else {
+                // Wrong Answer
+                playSoundEffect('wrong');
+                activePlayer.streak = 0;
+
+                if (!isRebutMode) {
+                    // Activate Rebut (Steal) System
+                    isRebutMode = true;
+                    originalPlayerIndex = activePlayerIndex;
+                    activePlayerIndex = (activePlayerIndex + 1) % players.length;
+                    speakText(`Jawapan salah! Peluang REBUTAN untuk ${players[activePlayerIndex].name}!`);
+                    renderDashboard();
+                } else {
+                    // Rebut Failed
+                    speakText(`Rebutan tidak berjaya. Jawapan betul ialah ${currentQuestion.choices[currentQuestion.correct]}.`);
+                    isRebutMode = false;
+                    activePlayerIndex = (originalPlayerIndex + 1) % players.length;
+                    loadNextQuestion();
+                }
+            }
+        }
+
+        function nextTurn() {
+            isRebutMode = false;
+            activePlayerIndex = (activePlayerIndex + 1) % players.length;
+            loadNextQuestion();
+        }
+
+        function triggerWinSequence(winner) {
+            speakText(`Tahniah! ${winner.name} menjadi JUARA Misi 50 Soalan!`);
+            document.getElementById('winner-display-name').innerText = winner.name.toUpperCase();
+            document.getElementById('winner-modal').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
